@@ -16,7 +16,7 @@ def lambda_handler(event, context):
     except json.JSONDecodeError as e:
         logging.error(f"Failed to decode JSON: {str(e)}")
         return {'statusCode': 400, 'body': f'Failed to decode JSON: {str(e)}'}
-    
+
 
     try:
         # RDS 인스턴스 시작

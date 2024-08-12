@@ -82,6 +82,13 @@ resource "aws_s3_object" "tests_directory" {
   content_type = "application/x-directory"
 }
 
+resource "aws_s3_object" "dbt_directory" {
+  bucket = aws_s3_bucket.airflow_dags_bucket.id
+  key    = "dbt/"
+  content_type = "application/x-directory"
+}
+
+
 resource "aws_s3_bucket" "external_zone" {
   bucket = "${var.project_name}-external-zone"
 }

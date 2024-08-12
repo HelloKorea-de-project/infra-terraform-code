@@ -27,7 +27,7 @@ variable "basic_ec2_ami" {
 variable "airflow_ec2_ami" {
   description = "The AMI to use for the EC2 instances"
   type        = string
-  default     = "ami-03c2773543a74f517"
+  default     = "ami-0a3c6a44b06d9b432"
 }
 
 variable "s3_bucket_name" {

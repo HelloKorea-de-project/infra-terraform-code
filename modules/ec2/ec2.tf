@@ -327,6 +327,13 @@ resource "aws_security_group" "alb" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     }
+    
+  ingress {
+    from_port   = 8099
+    to_port     = 8099
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   egress {
     from_port   = 0
@@ -352,6 +359,22 @@ resource "aws_lb_target_group" "airflow" {
   health_check {
     path = "/health"
     port = "8080"
+    protocol = "HTTP"
+    timeout = 5
+    interval = 30
+    healthy_threshold = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_target_group" "superset_server" {
+  name     = "${var.project_name}-superset-tg"
+  port     = 8099
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+  health_check {
+    path = "/health"
+    port = "8099"
     protocol = "HTTP"
     timeout = 5
     interval = 30
@@ -388,10 +411,31 @@ resource "aws_lb_listener" "grafana" {
   }
 }
 
+
+resource "aws_lb_listener" "superset_server" {
+  load_balancer_arn = aws_lb.airflow.arn
+  port              = "8099"  
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.superset_server.arn
+  }
+  tags = {
+    Name = "${var.project_name}-superset-listener"
+  }
+}
+
 resource "aws_lb_target_group_attachment" "airflow" {
   target_group_arn = aws_lb_target_group.airflow.arn
   target_id        = aws_instance.airflow.id
   port             = 8080
+}
+
+resource "aws_lb_target_group_attachment" "superset_server" {
+  target_group_arn = aws_lb_target_group.superset_server.arn
+  target_id        = aws_instance.superset_server.id
+  port             = 8099
 }
 
 resource "aws_lb" "django_server" {
@@ -468,16 +512,38 @@ resource "aws_instance" "airflow_first_worker" {
   
 }
 
-resource "aws_instance" "airflow_test" {
-  ami                    = "${var.basic_ec2_ami}"
+resource "aws_security_group" "superset_server" {
+  name        = "${var.project_name}-superset-sg"
+  description = "Security group for superset server"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 8099
+    to_port     = 8099
+    protocol    = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "superset_server" {
+  ami                    = "ami-0a3914c4bd7f9103d"
   instance_type          = "t3.small"
   subnet_id              = var.private_subnet_ids[1]
-  vpc_security_group_ids = [aws_security_group.private_instances.id]
+  vpc_security_group_ids = [aws_security_group.superset_server.id, aws_security_group.private_instances.id]
   key_name               = aws_key_pair.private_key.key_name
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
+  user_data = templatefile("${path.module}/tpl/superset_user_data.tpl",{})
+
   tags = {
-    Name = "${var.project_name}-test"
+    Name = "${var.project_name}-superset-server"
   }
   
 }

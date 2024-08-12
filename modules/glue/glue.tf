@@ -52,7 +52,7 @@ resource "aws_glue_job" "spark_subjob" {
     "--enable-job-insights"              = "true"
     "--enable-continuous-cloudwatch-log" = "true"
     "--enable-spark-ui"      = "true"
-    "--spark-event-logs-path" = "s3://${aws_s3_bucket.glue_scripts.bucket}/spark-logs/"
+    "--spark-event-logs-path" = "s3://${aws_s3_bucket.glue_scripts.bucket}/spark-logs/subjob-logs/"
   }
   execution_class           = "STANDARD"
   glue_version      = "3.0"  # Supports Spark 3.1
@@ -163,6 +163,12 @@ resource "aws_s3_object" "glue_scripts_directory" {
 resource "aws_s3_object" "glue_scripts_log_directory" {
   bucket = aws_s3_bucket.glue_scripts.id
   key    = "spark-logs/"
+  content_type = "application/x-directory"
+}
+
+resource "aws_s3_object" "subglue_scripts_log_directory" {
+  bucket = aws_s3_bucket.glue_scripts.id
+  key    = "spark-logs/subjob-logs/"
   content_type = "application/x-directory"
 }
 

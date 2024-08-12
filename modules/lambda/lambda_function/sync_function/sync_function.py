@@ -43,7 +43,7 @@ def lambda_handler(event, context):
     try:
         logger.info(f"Sending SSM command to Airflow instances: {airflow_instances_id}")
         response = ssm.send_command(
-            InstanceIds=['i-0e77f31bdb9039c0d'],
+            InstanceIds=airflow_instances_id,
             DocumentName="AWS-RunShellScript",
             Parameters={'commands': commands}
         )
